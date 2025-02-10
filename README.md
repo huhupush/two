@@ -1,11 +1,21 @@
-# 平行宇宙聊天 (Parallel Universe Chat)
+# Two聊天 (Parallel Universe Chat)
+
+本项目通过 AI 扮演两个角色进行有人类干预或无干预的交流。
+**用于人类与 AI，AI 与 AI的社会关系研究**。
+可以在本机部署（需要替换.env），也可以直接使用： https://huhupush-two.streamlit.app/chat， **这对我们的研究非常有帮助**
+
+This project uses AI to simulate conversations between two characters with or without human intervention.
+**It is designed for studying social relationships between humans and AI, as well as AI-to-AI interactions**.
+You can deploy it locally (requires .env configuration) or use it directly at: https://huhupush-two.streamlit.app/chat. **Your participation would greatly benefit our research**.
+
+![Two Chat Logo](./assets/a.png)
 
 [English](#english) | [中文](#中文)
 
 ## 中文
 
 ### 项目介绍
-Two聊天是一个有趣的对话系统，模拟了两个Two中的角色进行对话。系统使用大语言模型来生成对话内容，让两个角色能够进行自然、连贯的交流。
+Two聊天是一个创新的对话系统，通过 AI 模拟两个角色之间的对话。系统使用大语言模型来生成对话内容，支持人类干预和完全自主的 AI 对话模式，为研究人类-AI 互动和 AI-AI 社交行为提供了独特的平台。
 
 ### 特点
 - 🌟 支持多种大语言模型（OpenAI API、本地 Ollama 模型等）
@@ -71,12 +81,46 @@ streamlit run main.py
 ### 许可证
 MIT License
 
+### 系统要求
+- Python 3.8 或更高版本
+- 稳定的网络连接（使用 OpenAI API 时）
+- 足够的系统内存（使用本地模型时）
+
+### 目录结构
+```
+.
+├── assets/          # 静态资源文件
+├── data/           # 数据文件
+│   ├── config/     # 配置文件
+│   └── messages/   # 对话历史
+├── pages/          # Streamlit 页面
+├── server/         # 服务器端代码
+├── ui/             # 用户界面组件
+└── scripts/        # 实用脚本
+```
+
+### 常见问题
+1. Q: 如何切换不同的语言模型？
+   A: 在配置页面中可以选择不同的模型提供商，并配置相应的参数。
+
+2. Q: 对话历史保存在哪里？
+   A: 所有对话历史都保存在 `data/messages/` 目录下，按日期命名。
+
+3. Q: 如何自定义角色设定？
+   A: 可以在配置页面或直接编辑 `data/config/prompts_config.json` 文件。
+
+### 更新日志
+#### v1.0.0
+- 初始版本发布
+- 支持基本的对话功能
+- 集成 OpenAI 和 Ollama 模型
+
 ---
 
 ## English
 
 ### Project Description
-Parallel Universe Chat is an interesting dialogue system that simulates conversations between characters from parallel universes. The system uses large language models to generate dialogue content, enabling natural and coherent communication between two characters.
+Two Chat is an innovative dialogue system that simulates conversations between two AI-powered characters. The system utilizes large language models to generate dialogue content, supporting both human-intervened and fully autonomous AI conversations, providing a unique platform for studying human-AI interaction and AI-AI social behavior.
 
 ### Features
 - 🌟 Support for multiple LLMs (OpenAI API, local Ollama models, etc.)
@@ -140,4 +184,38 @@ streamlit run main.py
 Pull requests and issues are welcome!
 
 ### License
-MIT License 
+MIT License
+
+### System Requirements
+- Python 3.8 or higher
+- Stable internet connection (for OpenAI API)
+- Sufficient system memory (for local models)
+
+### Directory Structure
+```
+.
+├── assets/         # Static assets
+├── data/          # Data files
+│   ├── config/    # Configuration files
+│   └── messages/  # Chat history
+├── pages/         # Streamlit pages
+├── server/        # Server-side code
+├── ui/            # UI components
+└── scripts/       # Utility scripts
+```
+
+### FAQ
+1. Q: How to switch between different language models?
+   A: You can select different model providers and configure parameters in the configuration page.
+
+2. Q: Where are chat histories stored?
+   A: All chat histories are saved in the `data/messages/` directory, organized by date.
+
+3. Q: How to customize character settings?
+   A: You can modify settings through the configuration page or directly edit `data/config/prompts_config.json`.
+
+### Changelog
+#### v1.0.0
+- Initial release
+- Basic chat functionality
+- Integration with OpenAI and Ollama models 
