@@ -1,4 +1,4 @@
-# Two聊天 (Parallel Universe Chat)
+# Two
 
 本项目通过 AI 扮演两个角色进行有人类干预或无干预的交流。
 **用于人类与 AI，AI 与 AI的社会关系研究**。
