@@ -1,0 +1,36 @@
+parallel_universe_chat/
+├── server/
+│   ├── __init__.py
+│   ├── models/
+│   │   ├── __init__.py
+│   │   └── message.py
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── chat_service.py
+│   │   └── storage_service.py
+│   └── config/
+│       ├── __init__.py
+│       ├── settings.py
+│       └── prompts.py
+├── ui/
+│   ├── __init__.py
+│   ├── pages/
+│   │   ├── __init__.py
+│   │   ├── chat_page.py
+│   │   └── history_page.py
+│   └── components/
+│       ├── __init__.py
+│       └── message_display.py
+├── scripts/
+│   ├── install.sh
+│   └── deploy.sh
+├── tests/
+│   ├── __init__.py
+│   ├── test_chat_service.py
+│   └── test_storage_service.py
+├── data/
+│   ├── messages/
+│   └── thought_process/
+├── main.py
+├── requirements.txt
+└── README.md 
