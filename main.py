@@ -46,9 +46,9 @@ def init_services():
     
     if model_type == "openai":
         model_config = {
-            "model": os.getenv("MODEL_NAME"),
+            "model_name": os.getenv("MODEL_NAME"),
             "temperature": float(os.getenv("TEMPERATURE", "0.7")),
-            "openai_api_key": os.getenv("API_KEY"),
+            "api_key": os.getenv("API_KEY"),
             "base_url": os.getenv("API_BASE_URL"),
             "max_tokens": int(os.getenv("MAX_TOKENS", "1000"))
         }
@@ -63,7 +63,7 @@ def init_services():
         chat_service = ChatService(storage_service, model_config)
         return chat_service
     except Exception as e:
-        st.error(f"初始化服务失败: {str(e)}")
+        st.error(f"初始化服务失败1: {str(e)}")
         return None
 
 def main():

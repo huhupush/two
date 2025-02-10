@@ -60,9 +60,9 @@ def init_services():
     
     if model_type == "openai":
         model_config = {
-            "model": os.getenv("MODEL_NAME"),
+            "model_name": os.getenv("MODEL_NAME"),
             "temperature": float(os.getenv("TEMPERATURE", "0.7")),
-            "openai_api_key": os.getenv("API_KEY"),
+            "api_key": os.getenv("API_KEY"),
             "base_url": os.getenv("API_BASE_URL"),
             "max_tokens": int(os.getenv("MAX_TOKENS", "1000"))
         }
@@ -192,15 +192,22 @@ def main():
         # 显示生成状态
         with message_container:
             with st.chat_message(target_role):
-                with st.status(f"正在生成{role_name}的回复...", expanded=True) as status:
-                    st.write(f"✨ {role_name}正在思考中...")
+                # 使用 spinner 替代 status
+                with st.spinner(f"正在生成{role_name}的回复..."):
                     # 生成回复
                     response = chat_service.generate_message(target_role)
-                    st.write(f"💫 {role_name}写好了回复")
-                    status.update(label=f"{role_name}的回复已生成", state="complete")
                     
-                # 显示回复内容
-                st.write(response.content)
+                if "error" in response:
+                    st.error(f"生成回复时出错: {response['error']}")
+                else:
+                    # 显示回复内容
+                    st.write(response["content"])
+                    
+                    # 如果有思考过程，显示在消息下方
+                    if response.get("thought_process"):
+                        st.divider()
+                        st.caption("思考过程:")
+                        st.text(response["thought_process"])
         
         # 重置生成状态
         st.session_state.is_generating = False

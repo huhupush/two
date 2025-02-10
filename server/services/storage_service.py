@@ -48,6 +48,33 @@ class StorageService:
         with open(file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
+    def get_messages_in_range(self, start_date: datetime, end_date: datetime) -> List[Message]:
+        """获取指定日期范围内的所有消息
+        
+        Args:
+            start_date: 开始日期
+            end_date: 结束日期
+            
+        Returns:
+            List[Message]: 消息列表
+        """
+        messages = []
+        current_date = start_date.date()
+        
+        while current_date <= end_date.date():
+            daily_messages = self.get_messages_by_date(current_date)
+            if daily_messages:
+                for msg_dict in daily_messages:
+                    # 转换时间戳字符串为 datetime 对象
+                    msg_dict['timestamp'] = datetime.fromisoformat(msg_dict['timestamp'])
+                    msg = Message.from_dict(msg_dict)
+                    # 只添加在时间范围内的消息
+                    if start_date <= msg.timestamp <= end_date:
+                        messages.append(msg)
+            current_date += timedelta(days=1)
+            
+        return messages
+
     def get_thoughts_by_date(self, date: datetime.date) -> Optional[List[dict]]:
         """获取指定日期的思维过程"""
         file_path = self._get_file_path(datetime.combine(date, datetime.min.time()), True)
