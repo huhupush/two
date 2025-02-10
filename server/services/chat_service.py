@@ -22,9 +22,23 @@ class ChatService:
                 os.environ['HTTP_PROXY'] = openai_config['proxies'].get('http', '')
                 os.environ['HTTPS_PROXY'] = openai_config['proxies'].get('https', '')
                 del openai_config['proxies']
-                
+            
+            # 确保必要的参数存在
+            if not openai_config.get("openai_api_key"):
+                raise ValueError("OpenAI API key is required")
+            if not openai_config.get("base_url"):
+                raise ValueError("API base URL is required")
+            if not openai_config.get("model"):
+                raise ValueError("Model name is required")
+            
             self.llm = ChatOpenAI(**openai_config)
         else:  # ollama
+            # 确保必要的参数存在
+            if not model_config.get("base_url"):
+                raise ValueError("Ollama base URL is required")
+            if not model_config.get("model"):
+                raise ValueError("Model name is required")
+            
             self.llm = ChatOllama(**model_config)
 
     def _format_context(self, messages: List[Message]) -> str:

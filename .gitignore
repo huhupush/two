@@ -33,7 +33,5 @@ ENV/
 *.swo
 
 # Project specific
-data/messages/
-data/thought_process/
 *.log
 .DS_Store 

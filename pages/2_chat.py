@@ -26,6 +26,20 @@ def get_role_display_name(role: str) -> str:
 
 def init_services():
     """初始化服务"""
+    # 检查环境变量
+    required_vars = {
+        "MODEL_TYPE": os.getenv("MODEL_TYPE"),
+        "MODEL_NAME": os.getenv("MODEL_NAME"),
+        "API_KEY": os.getenv("API_KEY"),
+        "API_BASE_URL": os.getenv("API_BASE_URL")
+    }
+    
+    missing_vars = [key for key, value in required_vars.items() if not value]
+    if missing_vars:
+        st.error(f"缺少必要的环境变量: {', '.join(missing_vars)}")
+        st.info("请确保已正确设置 .env 文件")
+        return None
+    
     # 设置存储目录
     base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     messages_dir = os.path.join(base_dir, "data", "messages")
@@ -41,21 +55,38 @@ def init_services():
         thought_process_dir=thought_process_dir
     )
     
-    model_config = {
-        "model_name": os.getenv("MODEL_NAME", "gpt-3.5-turbo"),
-        "temperature": float(os.getenv("TEMPERATURE", "0.7")),
-        "api_key": os.getenv("API_KEY"),
-        "base_url": os.getenv("API_BASE_URL"),
-    }
+    # 获取模型类型
+    model_type = os.getenv("MODEL_TYPE")
     
-    chat_service = ChatService(storage_service, model_config)
-    return chat_service
+    if model_type == "openai":
+        model_config = {
+            "model": os.getenv("MODEL_NAME"),
+            "temperature": float(os.getenv("TEMPERATURE", "0.7")),
+            "openai_api_key": os.getenv("API_KEY"),
+            "base_url": os.getenv("API_BASE_URL"),
+            "max_tokens": int(os.getenv("MAX_TOKENS", "1000"))
+        }
+    else:  # ollama
+        model_config = {
+            "model": os.getenv("MODEL_NAME"),
+            "temperature": float(os.getenv("TEMPERATURE", "0.7")),
+            "base_url": os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
+        }
+    
+    try:
+        chat_service = ChatService(storage_service, model_config)
+        return chat_service
+    except Exception as e:
+        st.error(f"初始化服务失败: {str(e)}")
+        return None
 
 def main():
     st.title("Two")
     
     # 初始化服务
     chat_service = init_services()
+    if not chat_service:
+        st.stop()
     
     # 初始化 session state
     if "user_input" not in st.session_state:
