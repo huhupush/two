@@ -65,7 +65,7 @@ class AIService:
             callback = StreamingCallback(thought_container)
             
             # 设置流式输出
-            self._llm.streaming = True
+            # self._llm.streaming = True
             
             # 通过 config 传递 callbacks
             response = self._llm.invoke(
