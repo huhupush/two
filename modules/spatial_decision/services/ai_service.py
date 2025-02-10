@@ -19,7 +19,6 @@ class StreamingCallback(BaseCallbackHandler):
     def on_llm_new_token(self, token: str, **kwargs) -> None:
         """当收到新的 token 时调用"""
         if token:  # 只处理非空 token
-            print(f"收到token: {token}")
             self.current_thought += token
             if self.placeholder:
                 # 更新显示

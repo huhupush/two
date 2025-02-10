@@ -1,17 +1,14 @@
 from datetime import datetime, timedelta
-from typing import List, Dict, Optional
-from langchain_community.chat_models import ChatOpenAI
+from typing import List, Dict, Optional, Callable, Any
+from openai import OpenAI
 from langchain_ollama import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.callbacks import BaseCallbackHandler
 from ..models.message import Message
 from ..config.prompts import Prompts
 from ..config.settings import Config
 from .storage_service import StorageService
 import os
-import json
-from langchain.chat_models import ChatOpenAI
-from langchain.schema import HumanMessage, SystemMessage
-from config import config
 
 class MessageProcessor:
     @staticmethod
@@ -37,6 +34,25 @@ class MessageProcessor:
             print(f"Error in clean_content: {e}")
             return content.strip(), ""
 
+class StreamingCallbackHandler:
+    """处理流式输出的回调处理器"""
+    
+    def __init__(self, thought_callback: Callable[[str], Any], content_callback: Callable[[str], Any]):
+        self.thought_callback = thought_callback
+        self.content_callback = content_callback
+        
+    def process_chunk(self, chunk) -> None:
+        """处理新的输出chunk"""
+        # 处理思维链内容
+        if hasattr(chunk.choices[0].delta, 'reasoning_content'):
+            if chunk.choices[0].delta.reasoning_content:
+                self.thought_callback(chunk.choices[0].delta.reasoning_content)
+                
+        # 处理模型返回的实际内容
+        if hasattr(chunk.choices[0].delta, 'content'):
+            if chunk.choices[0].delta.content:
+                self.content_callback(chunk.choices[0].delta.content)
+
 class ChatService:
     def __init__(self, storage_service: StorageService, model_config: dict):
         self.storage = storage_service
@@ -44,29 +60,17 @@ class ChatService:
         model_type = Config().MODEL_TYPE
         
         if model_type == "openai":
-            # 从 model_config 中移除代理设置
-            openai_config = model_config.copy()
-            if 'proxies' in openai_config:
-                # 如果需要代理，通过环境变量设置
-                os.environ['HTTP_PROXY'] = openai_config['proxies'].get('http', '')
-                os.environ['HTTPS_PROXY'] = openai_config['proxies'].get('https', '')
-                del openai_config['proxies']
-            
-            # 确保必要的参数存在
-            if not openai_config.get("api_key"):
-                raise ValueError("OpenAI API key is required")
-            if not openai_config.get("base_url"):
-                raise ValueError("API base URL is required")
-            if not openai_config.get("model_name"):
-                raise ValueError("Model name is required")
-            
-            self.llm = ChatOpenAI(**openai_config)
+            # 初始化OpenAI客户端
+            self.client = OpenAI(
+                api_key=model_config.get("api_key"),
+                base_url=model_config.get("base_url")
+            )
+            self.model_name = model_config.get("model_name", "gpt-3.5-turbo")
+            self.temperature = model_config.get("temperature", 0.7)
+            self.max_tokens = model_config.get("max_tokens", 1000)
         else:  # ollama
-            # 确保必要的参数存在
-            if not model_config.get("base_url"):
-                raise ValueError("Ollama base URL is required")
-            if not model_config.get("model"):
-                raise ValueError("Model name is required")
+            if not all(key in model_config for key in ["base_url", "model"]):
+                raise ValueError("Missing required Ollama configuration")
             
             self.llm = ChatOllama(**model_config)
 
@@ -106,11 +110,14 @@ class ChatService:
             for msg in messages
         ])
 
-    def generate_message(self, sender: str) -> Dict:
-        """生成新的消息
+    def generate_message(self, sender: str, thought_callback: Callable[[str], Any] = None, 
+                        content_callback: Callable[[str], Any] = None) -> Dict:
+        """生成新的消息，支持流式输出
         
         Args:
             sender: 发送者角色
+            thought_callback: 处理思维过程流式输出的回调函数
+            content_callback: 处理内容流式输出的回调函数
             
         Returns:
             Dict: 生成的消息
@@ -126,28 +133,50 @@ class ChatService:
             
             # 构建消息列表
             messages = [
-                SystemMessage(content=system_prompt),
-                HumanMessage(content=f"这是最近的对话记录：\n{context_text}\n\n根据以上对话和你的角色，请回复一条消息：")
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": f"这是最近的对话记录：\n{context_text}\n\n根据以上对话和你的角色，请回复一条消息。"}
             ]
             
-            # 生成回复
-            response = self.llm.invoke(messages)
-            content = response.content
+            # 创建回调处理器
+            callback_handler = None
+            if thought_callback and content_callback:
+                callback_handler = StreamingCallbackHandler(thought_callback, content_callback)
             
-            # 分离思考过程和实际回复
-            clean_content, thought_process = MessageProcessor.clean_content(content)
+            # 使用流式API生成回复
+            full_content = ""
+            thought_content = ""
             
-            print(f"原始内容: {content}")
-            print(f"思考过程: {thought_process}")
-            print(f"实际回复: {clean_content}")
+            stream = self.client.chat.completions.create(
+                model=self.model_name,
+                messages=messages,
+                temperature=self.temperature,
+                max_tokens=self.max_tokens,
+                stream=True,
+                response_format={"type": "text"}
+            )
+            
+            # 处理流式输出
+            for chunk in stream:
+                if callback_handler:
+                    callback_handler.process_chunk(chunk)
+                    
+                # 收集思维链内容
+                if hasattr(chunk.choices[0].delta, 'reasoning_content'):
+                    if chunk.choices[0].delta.reasoning_content:
+                        thought_content += chunk.choices[0].delta.reasoning_content
+                
+                # 收集实际内容
+                if hasattr(chunk.choices[0].delta, 'content'):
+                    if chunk.choices[0].delta.content:
+                        full_content += chunk.choices[0].delta.content
             
             # 创建消息对象
             timestamp = datetime.now()
             message = Message(
-                content=clean_content,
+                content=full_content.strip(),
                 sender=sender,
                 timestamp=timestamp,
-                thought_process=thought_process
+                thought_process=thought_content.strip()
             )
             
             # 保存消息

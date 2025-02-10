@@ -95,6 +95,10 @@ def main():
         st.session_state.is_generating = False
     if "should_rerun" not in st.session_state:
         st.session_state.should_rerun = False
+    if "current_thought" not in st.session_state:
+        st.session_state.current_thought = ""
+    if "current_content" not in st.session_state:
+        st.session_state.current_content = ""
         
     # 定义回调函数
     def send_message():
@@ -188,29 +192,37 @@ def main():
         
         # 设置生成状态
         st.session_state.is_generating = True
+        st.session_state.current_thought = ""
+        st.session_state.current_content = ""
         
-        # 显示生成状态
+        # 创建占位符
         with message_container:
             with st.chat_message(target_role):
-                # 使用 spinner 替代 status
-                with st.spinner(f"正在生成{role_name}的回复..."):
-                    # 生成回复
-                    response = chat_service.generate_message(target_role)
-                    
+                message_placeholder = st.empty()
+                thought_expander = st.expander("✨正在思考...", expanded=False)
+                expander_container = thought_expander.empty()
+                def update_thought(token: str):
+                    st.session_state.current_thought += token
+                        
+                def update_content(token: str):
+                    expander_container.empty()
+                    st.session_state.current_content += token
+                    message_placeholder.markdown(st.session_state.current_content)
+                
+                # 生成回复
+                response = chat_service.generate_message(
+                    target_role,
+                    thought_callback=update_thought,
+                    content_callback=update_content
+                )
+                
                 if "error" in response:
                     st.error(f"生成回复时出错: {response['error']}")
-                else:
-                    # 显示回复内容
-                    st.write(response["content"])
-                    
-                    # 如果有思考过程，显示在消息下方
-                    if response.get("thought_process"):
-                        st.divider()
-                        st.caption("思考过程:")
-                        st.text(response["thought_process"])
         
         # 重置生成状态
         st.session_state.is_generating = False
+        st.session_state.current_thought = ""
+        st.session_state.current_content = ""
         
         # 刷新页面以显示新消息
         st.rerun()

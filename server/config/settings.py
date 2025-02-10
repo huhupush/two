@@ -14,7 +14,7 @@ print("环境变量加载后 API_KEY:", os.getenv("API_KEY"))
 
 class Config(BaseModel):
     # API 配置
-    API_BASE_URL: str = os.getenv("API_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    API_BASE_URL: str = os.getenv("API_BASE_URL")
     API_KEY: str = os.getenv("API_KEY")
     
     @property
