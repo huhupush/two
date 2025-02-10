@@ -2,11 +2,11 @@
 
 本项目通过 AI 扮演两个角色进行有人类干预或无干预的交流。
 **用于人类与 AI，AI 与 AI的社会关系研究**。
-可以在本机部署（需要替换.env），也可以直接使用： https://huhupush-two.streamlit.app/chat， **这对我们的研究非常有帮助**
+可以在本机部署（需要替换.env），也可以直接使用： https://huhupush-two.streamlit.app/chat  **这对我们的研究非常有帮助**
 
 This project uses AI to simulate conversations between two characters with or without human intervention.
 **It is designed for studying social relationships between humans and AI, as well as AI-to-AI interactions**.
-You can deploy it locally (requires .env configuration) or use it directly at: https://huhupush-two.streamlit.app/chat. **Your participation would greatly benefit our research**.
+You can deploy it locally (requires .env configuration) or use it directly at: https://huhupush-two.streamlit.app/chat **Your participation would greatly benefit our research**.
 
 ![Two Chat Logo](./assets/a.png)
 
