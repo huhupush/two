@@ -1,10 +1,13 @@
+from langchain_ollama import ChatOllama
 import streamlit as st
 import os
 from datetime import datetime
 from modules.spatial_decision.coordinate.coordinate_system import CoordinateSystem
 from modules.spatial_decision.visualization.trajectory_plot import TrajectoryPlot
 from modules.spatial_decision.analysis.trajectory_analysis import TrajectoryAnalysis
-import time
+from langchain.chat_models import ChatOpenAI
+from modules.spatial_decision.services.ai_service import AIService
+from server.config.settings import Config
 
 TRAJECTORY_FILE = 'data/trajectories/trajectory.json'
 
@@ -69,6 +72,29 @@ def display_analysis(analysis: TrajectoryAnalysis):
         st.metric('预测趋势', tendency['tendency'])
     with col8:
         st.metric('置信度', f"{tendency['confidence']*100:.0f}%")
+
+def init_llm():
+    """初始化语言模型"""
+    config = Config()
+    
+    if config.model_type.lower() == "openai":
+        return ChatOpenAI(
+            model_name=config.model_name,
+            api_key=config.api_key,
+            base_url=config.api_base_url,
+            temperature=config.temperature,
+            max_tokens=config.max_tokens,
+            streaming=True
+        )
+    elif config.model_type.lower() == "ollama":
+        return ChatOllama(
+            model=config.model_name,
+            base_url=config.api_base_url,
+            temperature=config.temperature,
+            streaming=True
+        )
+    else:
+        raise ValueError(f"不支持的模型类型: {config.model_type}")
 
 def main():
     st.set_page_config(layout="wide")
@@ -162,6 +188,48 @@ def main():
             display_analysis(analysis)
         else:
             st.info('请先生成一些轨迹点以查看分析结果')
+
+    # 初始化 AI 服务
+    if "ai_service" not in st.session_state:
+        try:
+            llm = init_llm()
+            st.session_state.ai_service = AIService(llm)
+        except Exception as e:
+            st.error(f"初始化 AI 服务失败: {e}")
+            return
+    
+    # 初始化轨迹分析
+    if "trajectory_analysis" not in st.session_state:
+        st.session_state.trajectory_analysis = TrajectoryAnalysis()
+    
+    # 获取历史轨迹
+    trajectory = st.session_state.trajectory_analysis.get_trajectory()
+    
+    # 显示轨迹图
+    fig = st.session_state.trajectory_analysis.plot_trajectory()
+    st.plotly_chart(fig)
+    
+    # 添加预测按钮
+    if st.button("预测下一步"):
+        try:
+            # 创建一个容器来显示思考过程
+            thought_container = st.empty()
+            
+            # 预测下一个位置
+            x, y, thought_process = st.session_state.ai_service.predict_movement(
+                str(trajectory),
+                thought_container=thought_container
+            )
+            
+            # 添加新的坐标点
+            st.session_state.trajectory_analysis.add_point(x, y)
+            
+            # 更新图表
+            fig = st.session_state.trajectory_analysis.plot_trajectory()
+            st.plotly_chart(fig)
+            
+        except Exception as e:
+            st.error(f"预测失败: {e}")
 
 if __name__ == '__main__':
     main() 

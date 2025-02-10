@@ -3,7 +3,11 @@ from typing import List, Tuple
 import numpy as np
 import json
 from datetime import datetime
-from modules.services.ai_service import AIService
+from modules.spatial_decision.services.ai_service import AIService
+from langchain.chat_models import ChatOpenAI
+from langchain_community.chat_models import ChatOllama
+
+from server.config.settings import Config
 
 @dataclass
 class Coordinate:
@@ -27,8 +31,36 @@ class Coordinate:
 class CoordinateSystem:
     def __init__(self):
         self.trajectory: List[Coordinate] = []
-        self.ai_service = AIService()
+        self._ai_service = None
         
+    def _init_ai_service(self):
+        """初始化 AI 服务"""
+        if self._ai_service is None:
+            config = Config()
+            
+            if config.MODEL_TYPE.lower() == "openai":
+                llm = ChatOpenAI(
+                    model_name=config.MODEL_NAME,
+                    api_key=config.API_KEY,
+                    base_url=config.API_BASE_URL,
+                    temperature=config.TEMPERATURE,
+                    max_tokens=config.MAX_TOKENS,
+                    streaming=True
+                )
+            elif config.MODEL_TYPE.lower() == "ollama":
+                llm = ChatOllama(
+                    model=config.MODEL_NAME,
+                    base_url=config.OLLAMA_BASE_URL,
+                    temperature=config.TEMPERATURE,
+                    streaming=True
+                )
+            else:
+                raise ValueError(f"不支持的模型类型: {config.MODEL_TYPE}")
+                
+            self._ai_service = AIService(llm)
+        
+        return self._ai_service
+
     def get_range(self) -> Tuple[Tuple[float, float], Tuple[float, float]]:
         """获取当前轨迹的坐标范围，如果没有轨迹则返回默认范围"""
         if not self.trajectory:
@@ -77,10 +109,13 @@ class CoordinateSystem:
             return (np.random.uniform(-10, 10), np.random.uniform(-10, 10), "随机生成初始点")
         
         try:
+            # 初始化 AI 服务
+            ai_service = self._init_ai_service()
+            
             # 准备轨迹信息
             trajectory_info = self._format_trajectory_info()
             # 使用 AI 服务预测下一个点
-            return self.ai_service.predict_movement(trajectory_info, thought_container)
+            return ai_service.predict_movement(trajectory_info, thought_container)
         except Exception as e:
             print(f"AI 预测失败: {e}")
             # 如果 AI 预测失败，使用简单的规则
